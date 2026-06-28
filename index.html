@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智学日程 AI — 个性化自适应自习规划</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #4F46E5;
+  --primary-dark: #3730A3;
+  --primary-light: #E0E7FF;
+  --success: #10B981;
+  --success-light: #D1FAE5;
+  --warning: #F59E0B;
+  --warning-light: #FEF3C7;
+  --danger: #EF4444;
+  --danger-light: #FEE2E2;
+  --text: #1F2937;
+  --text-muted: #6B7280;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 32px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header p {
+  opacity: 0.9;
+  font-size: 1.05rem;
+  max-width: 600px;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.stat-pill {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.stat-pill strong {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Main container */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap: 24px;
+}
+
+@media (max-width: 1200px) {
+  .container { grid-template-columns: 1fr 1fr; }
+  .right-column { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+  .container { grid-template-columns: 1fr; }
+  .right-column { grid-column: span 1; }
+  .header h1 { font-size: 1.5rem; }
+}
+
+/* Card styles */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+}
+
+.card-title .icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* Forms */
+.form-group { margin-bottom: 16px; }
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--bg);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+textarea { min-height: 80px; resize: vertical; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { background: var(--primary-light); border-color: var(--primary); }
+
+.btn-danger {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.btn-danger:hover { background: var(--danger); color: white; }
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* Goal list */
+.goal-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.goal-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--bg);
+  transition: all 0.2s;
+}
+
+.goal-item:hover { border-color: var(--primary); }
+
+.goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.goal-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.goal-subject {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.goal-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Difficulty stars */
+.difficulty {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.star {
+  color: #E5E7EB;
+  font-size: 0.9rem;
+}
+
+.star.filled { color: #FBBF24; }
+
+/* Task list */
+.task-list { display: flex; flex-direction: column; gap: 10px; }
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border-left: 4px solid var(--primary);
+  transition: all 0.2s;
+}
+
+.task-item:hover { background: #F1F5F9; }
+
+.task-item.completed { opacity: 0.6; border-left-color: var(--success); }
+
+.task-item.completed .task-content { text-decoration: line-through; color: var(--text-muted); }
+
+.task-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.2s;
+}
+
+.task-item.completed .task-checkbox {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+
+.task-content { flex: 1; }
+
+.task-title { font-weight: 600; margin-bottom: 4px; }
+
+.task-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.task-tag {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tag-review { background: var(--warning-light); color: #B45309; }
+.tag-new { background: var(--primary-light); color: var(--primary-dark); }
+.tag-urgent { background: var(--danger-light); color: var(--danger); }
+
+/* Weekly calendar */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.week-day {
+  text-align: center;
+  padding: 10px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.week-day:hover { background: var(--primary-light); }
+
+.week-day.active {
+  background: var(--primary);
+  color: white;
+}
+
+.week-day .day-name { font-weight: 600; font-size: 0.75rem; }
+.week-day .day-date { font-size: 1.1rem; font-weight: 700; margin: 4px 0; }
+.week-day .day-count { font-size: 0.7rem; opacity: 0.8; }
+
+/* Progress ring */
+.progress-section { display: flex; align-items: center; gap: 20px; }
+
+.progress-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.progress-ring svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.progress-ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+.progress-ring-fill { fill: none; stroke: var(--primary); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.progress-text .percent { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+.progress-text .label { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Stats list */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-row:last-child { border-bottom: none; }
+
+.stat-label { font-size: 0.9rem; color: var(--text-muted); }
+
+.stat-value { font-weight: 700; font-size: 1.1rem; }
+
+/* Forgetting curve visualization */
+.curve-chart {
+  width: 100%;
+  height: 160px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.curve-chart svg { width: 100%; height: 100%; }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+
+.modal-overlay.active { opacity: 1; visibility: visible; }
+
+.modal {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 28px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.95);
+  transition: transform 0.3s;
+}
+
+.modal-overlay.active .modal { transform: scale(1); }
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-title { font-size: 1.2rem; font-weight: 700; }
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+/* Floating action */
+.fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 100;
+}
+
+.fab:hover { transform: scale(1.1); background: var(--primary-dark); }
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Subject colors */
+.subject-color-1 { background: #E0E7FF; color: #3730A3; }
+.subject-color-2 { background: #D1FAE5; color: #065F46; }
+.subject-color-3 { background: #FEF3C7; color: #92400E; }
+.subject-color-4 { background: #FCE7F3; color: #9D174D; }
+.subject-color-5 { background: #E0F2FE; color: #075985; }
+.subject-color-6 { background: #F3E8FF; color: #6B21A8; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  z-index: 2000;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* Utility */
+.hidden { display: none !important; }
+.flex { display: flex; }
+.gap-2 { gap: 8px; }
+.mt-2 { margin-top: 8px; }
+.mb-2 { margin-bottom: 8px; }
+.text-sm { font-size: 0.85rem; }
+.text-muted { color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <h1>🎓 智学日程 AI</h1>
+    <p>个性化自适应自习规划工具，遵循艾宾浩斯遗忘曲线，让每一分钟复习都花在刀刃上。</p>
+    <div class="stats-bar">
+      <div class="stat-pill">
+        <span>📋 今日任务</span>
+        <strong id="todayTaskCount">0</strong>
+      </div>
+      <div class="stat-pill">
+        <span>✅ 完成率</span>
+        <strong id="todayProgress">0%</strong>
+      </div>
+      <div class="stat-pill">
+        <span>🧠 待复习</span>
+        <strong id="reviewCount">0</strong>
+      </div>
+      <div class="stat-pill">
+        <span>⏱️ 预计时长</span>
+        <strong id="todayDuration">0h</strong>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Left Column -->
+  <div class="left-column">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-1">🎯</span>
+        学习目标管理
+      </div>
+      <p class="text-sm text-muted mb-2">添加你的考试/目标，AI 会自动拆解为每日可执行任务。</p>
+      <div class="form-group">
+        <label>科目名称</label>
+        <input type="text" id="goalSubject" placeholder="例如：高等数学">
+      </div>
+      <div class="form-group">
+        <label>考试/目标日期</label>
+        <input type="date" id="goalDate">
+      </div>
+      <div class="form-group">
+        <label>知识点（每行一个）</label>
+        <textarea id="goalPoints" placeholder="例如：导数定义&#10;定积分应用&#10;微分方程"></textarea>
+      </div>
+      <div class="form-group">
+        <label>平均难度</label>
+        <select id="goalDifficulty">
+          <option value="1">⭐ 简单 - 已掌握</option>
+          <option value="2" selected>⭐⭐ 中等 - 需要巩固</option>
+          <option value="3">⭐⭐⭐ 较难 - 重点突破</option>
+          <option value="4">⭐⭐⭐⭐ 困难 - 薄弱环节</option>
+          <option value="5">⭐⭐⭐⭐⭐ 极难 - 从头学习</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addGoal()">
+        <span>+</span> 添加学习目标
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-2">📚</span>
+        我的目标
+      </div>
+      <div class="goal-list" id="goalList">
+        <div class="empty-state">
+          <div class="emoji">📝</div>
+          <p>暂无目标，先添加一个学习计划吧</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-5">🧬</span>
+        艾宾浩斯遗忘曲线
+      </div>
+      <div class="curve-chart" id="curveChart">
+        <svg viewBox="0 0 400 160">
+          <path d="M 20 20 Q 60 80, 120 120 T 380 140" fill="none" stroke="#4F46E5" stroke-width="3" stroke-dasharray="1000" stroke-dashoffset="1000">
+            <animate attributeName="stroke-dashoffset" from="1000" to="0" dur="2s" fill="freeze"/>
+          </path>
+          <circle cx="20" cy="20" r="4" fill="#4F46E5"/>
+          <circle cx="120" cy="120" r="4" fill="#F59E0B"/>
+          <circle cx="380" cy="140" r="4" fill="#10B981"/>
+          <text x="20" y="155" font-size="10" fill="#6B7280">第1天</text>
+          <text x="120" y="155" font-size="10" fill="#6B7280">第7天</text>
+          <text x="360" y="155" font-size="10" fill="#6B7280">第30天</text>
+          <text x="200" y="15" font-size="11" fill="#6B7280" text-anchor="middle">记忆保留率随时间下降，间隔复习巩固</text>
+        </svg>
+      </div>
+      <div class="text-sm text-muted mt-2">
+        <p>复习间隔：1天、2天、4天、7天、15天、30天</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Column -->
+  <div class="middle-column">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-3">☀️</span>
+        今日学习日程
+      </div>
+      <div class="flex gap-2 mb-2">
+        <button class="btn btn-secondary btn-sm" onclick="generatePlan()">🤖 AI重新生成计划</button>
+        <button class="btn btn-secondary btn-sm" onclick="regenerateToday()">📅 刷新今日任务</button>
+      </div>
+      <div class="task-list" id="todayTaskList">
+        <div class="empty-state">
+          <div class="emoji">🤖</div>
+          <p>点击"AI重新生成计划"，或添加目标后自动生成</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-4">📅</span>
+        本周概览
+      </div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="right-column">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-6">🧠</span>
+        今日复习提醒
+      </div>
+      <div class="task-list" id="reviewList">
+        <div class="empty-state">
+          <div class="emoji">🎉</div>
+          <p>今日没有复习任务，继续保持！</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-2">📊</span>
+        学习数据
+      </div>
+      <div class="progress-section">
+        <div class="progress-ring">
+          <svg>
+            <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="progress-ring-fill" id="progressRing" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+          </svg>
+          <div class="progress-text">
+            <div class="percent" id="progressPercent">0%</div>
+            <div class="label">今日完成</div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="stat-row">
+            <span class="stat-label">本周学习时长</span>
+            <span class="stat-value" id="weekDuration">0h</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">累计完成任务</span>
+            <span class="stat-value" id="totalCompleted">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">进行中的目标</span>
+            <span class="stat-value" id="activeGoals">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon subject-color-5">🏆</span>
+        学科进度
+      </div>
+      <div id="subjectProgress"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Goal Modal -->
+<div class="modal-overlay" id="addGoalModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">添加学习目标</div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="form-group">
+      <label>科目</label>
+      <input type="text" id="modalSubject" placeholder="例如：英语四级">
+    </div>
+    <div class="form-group">
+      <label>考试日期</label>
+      <input type="date" id="modalDate">
+    </div>
+    <div class="form-group">
+      <label>知识点</label>
+      <textarea id="modalPoints" placeholder="每行输入一个知识点"></textarea>
+    </div>
+    <div class="form-group">
+      <label>难度</label>
+      <select id="modalDifficulty">
+        <option value="1">⭐ 简单</option>
+        <option value="2" selected>⭐⭐ 中等</option>
+        <option value="3">⭐⭐⭐ 较难</option>
+        <option value="4">⭐⭐⭐⭐ 困难</option>
+        <option value="5">⭐⭐⭐⭐⭐ 极难</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="addGoalFromModal()">确认添加</button>
+  </div>
+</div>
+
+<button class="fab" onclick="openModal()" title="添加目标">+</button>
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== Data Management ====================
+const EBBINGHAUS_INTERVALS = [1, 2, 4, 7, 15, 30];
+const SUBJECT_COLORS = ['subject-color-1', 'subject-color-2', 'subject-color-3', 'subject-color-4', 'subject-color-5', 'subject-color-6'];
+
+let appData = {
+  goals: [],
+  tasks: [],
+  completions: {},
+  settings: { dailyStudyHours: 3 }
+};
+
+function loadData() {
+  const saved = localStorage.getItem('smartStudyAI');
+  if (saved) {
+    appData = JSON.parse(saved);
+  } else {
+    initDemoData();
+  }
+}
+
+function saveData() {
+  localStorage.setItem('smartStudyAI', JSON.stringify(appData));
+}
+
+function initDemoData() {
+  const today = new Date();
+  const examDate = new Date(today);
+  examDate.setDate(today.getDate() + 14);
+
+  appData.goals = [
+    {
+      id: 'g1',
+      subject: '高等数学',
+      examDate: examDate.toISOString().split('T')[0],
+      points: ['导数定义', '定积分应用', '微分方程基础', '多元函数极值'],
+      difficulty: 3,
+      colorIndex: 0,
+      createdAt: today.toISOString()
+    },
+    {
+      id: 'g2',
+      subject: '英语四级',
+      examDate: formatDate(addDays(today, 21)),
+      points: ['高频词汇', '阅读理解技巧', '听力练习', '作文模板'],
+      difficulty: 2,
+      colorIndex: 1,
+      createdAt: today.toISOString()
+    }
+  ];
+  generatePlan();
+}
+
+// ==================== Utilities ====================
+function formatDate(date) {
+  return date.toISOString().split('T')[0];
+}
+
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function daysBetween(d1, d2) {
+  const a = new Date(d1).setHours(0,0,0,0);
+  const b = new Date(d2).setHours(0,0,0,0);
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function getSubjectColorIndex(subject) {
+  const existing = appData.goals.find(g => g.subject === subject);
+  return existing ? existing.colorIndex : appData.goals.length % SUBJECT_COLORS.length;
+}
+
+// ==================== Goal Management ====================
+function addGoal() {
+  const subject = document.getElementById('goalSubject').value.trim();
+  const date = document.getElementById('goalDate').value;
+  const pointsText = document.getElementById('goalPoints').value.trim();
+  const difficulty = parseInt(document.getElementById('goalDifficulty').value);
+
+  if (!subject || !date || !pointsText) {
+    showToast('请填写完整的目标信息');
+    return;
+  }
+
+  const points = pointsText.split('\n').map(p => p.trim()).filter(p => p);
+
+  const goal = {
+    id: 'g' + Date.now(),
+    subject,
+    examDate: date,
+    points,
+    difficulty,
+    colorIndex: appData.goals.length % SUBJECT_COLORS.length,
+    createdAt: new Date().toISOString()
+  };
+
+  appData.goals.push(goal);
+  saveData();
+  generatePlan();
+  renderGoals();
+  renderStats();
+
+  // Clear form
+  document.getElementById('goalSubject').value = '';
+  document.getElementById('goalDate').value = '';
+  document.getElementById('goalPoints').value = '';
+  document.getElementById('goalDifficulty').value = '2';
+
+  showToast(`已添加目标：${subject}`);
+}
+
+function addGoalFromModal() {
+  const subject = document.getElementById('modalSubject').value.trim();
+  const date = document.getElementById('modalDate').value;
+  const pointsText = document.getElementById('modalPoints').value.trim();
+  const difficulty = parseInt(document.getElementById('modalDifficulty').value);
+
+  if (!subject || !date || !pointsText) {
+    showToast('请填写完整的目标信息');
+    return;
+  }
+
+  const points = pointsText.split('\n').map(p => p.trim()).filter(p => p);
+
+  const goal = {
+    id: 'g' + Date.now(),
+    subject,
+    examDate: date,
+    points,
+    difficulty,
+    colorIndex: appData.goals.length % SUBJECT_COLORS.length,
+    createdAt: new Date().toISOString()
+  };
+
+  appData.goals.push(goal);
+  saveData();
+  generatePlan();
+  renderGoals();
+  renderStats();
+  closeModal();
+
+  document.getElementById('modalSubject').value = '';
+  document.getElementById('modalDate').value = '';
+  document.getElementById('modalPoints').value = '';
+  document.getElementById('modalDifficulty').value = '2';
+
+  showToast(`已添加目标：${subject}`);
+}
+
+function deleteGoal(id) {
+  if (!confirm('确定删除这个目标？相关任务也会一并清除。')) return;
+  appData.goals = appData.goals.filter(g => g.id !== id);
+  appData.tasks = appData.tasks.filter(t => t.goalId !== id);
+  saveData();
+  renderGoals();
+  renderToday();
+  renderWeek();
+  renderStats();
+  showToast('目标已删除');
+}
+
+function renderGoals() {
+  const container = document.getElementById('goalList');
+  if (appData.goals.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📝</div>
+        <p>暂无目标，先添加一个学习计划吧</p>
+      </div>
+    `;
+    return;
+  }
+
+  const today = new Date();
+  container.innerHTML = appData.goals.map(goal => {
+    const daysLeft = daysBetween(today, new Date(goal.examDate));
+    const colorClass = SUBJECT_COLORS[goal.colorIndex];
+    const difficultyStars = Array(5).fill(0).map((_, i) => 
+      `<span class="star ${i < goal.difficulty ? 'filled' : ''}">★</span>`
+    ).join('');
+    
+    return `
+      <div class="goal-item">
+        <div class="goal-header">
+          <div>
+            <div class="goal-title">
+              <span class="goal-subject ${colorClass}">${goal.subject}</span>
+            </div>
+            <div class="difficulty">${difficultyStars}</div>
+          </div>
+          <div class="goal-actions">
+            <button class="btn btn-danger btn-sm" onclick="deleteGoal('${goal.id}')">删除</button>
+          </div>
+        </div>
+        <div class="goal-meta">
+          <span>📅 ${goal.examDate}</span>
+          <span>⏳ ${daysLeft >= 0 ? `还有 ${daysLeft} 天` : `已过期 ${Math.abs(daysLeft)} 天`}</span>
+          <span>📚 ${goal.points.length} 个知识点</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==================== AI Plan Generation ====================
+function generatePlan() {
+  if (appData.goals.length === 0) return;
+
+  const today = new Date();
+  appData.tasks = [];
+
+  appData.goals.forEach(goal => {
+    const examDate = new Date(goal.examDate);
+    const totalDays = Math.max(3, daysBetween(today, examDate));
+    const points = goal.points;
+    
+    // Distribute points across days, harder = more sessions
+    const sessions = [];
+    points.forEach((point, idx) => {
+      const difficultyWeight = goal.difficulty / 3;
+      const sessionsForPoint = Math.max(1, Math.round(difficultyWeight * 2));
+      for (let i = 0; i < sessionsForPoint; i++) {
+        sessions.push({ point, sessionIndex: i });
+      }
+    });
+
+    // Spread sessions across available days
+    sessions.forEach((session, idx) => {
+      const dayOffset = Math.min(totalDays - 1, Math.floor((idx / sessions.length) * totalDays));
+      const taskDate = addDays(today, dayOffset);
+      const duration = 25 + Math.round(goal.difficulty * 10) + (session.sessionIndex * 5);
+      
+      appData.tasks.push({
+        id: 't' + Date.now() + '_' + idx,
+        goalId: goal.id,
+        subject: goal.subject,
+        point: session.point,
+        type: 'learn',
+        date: formatDate(taskDate),
+        duration: duration,
+        completed: false,
+        difficulty: goal.difficulty,
+        createdAt: today.toISOString()
+      });
+    });
+
+    // Add review tasks based on Ebbinghaus intervals
+    points.forEach((point, pIdx) => {
+      // Find the first learning date for this point
+      const learnTasks = appData.tasks.filter(t => t.goalId === goal.id && t.point === point && t.type === 'learn');
+      if (learnTasks.length === 0) return;
+      
+      const firstLearnDate = new Date(learnTasks[0].date);
+      
+      EBBINGHAUS_INTERVALS.forEach((interval, i) => {
+        const reviewDate = addDays(firstLearnDate, interval);
+        if (reviewDate > examDate) return;
+        
+        appData.tasks.push({
+          id: 'r' + Date.now() + '_' + pIdx + '_' + i,
+          goalId: goal.id,
+          subject: goal.subject,
+          point: point,
+          type: 'review',
+          reviewIndex: i + 1,
+          date: formatDate(reviewDate),
+          duration: 15,
+          completed: false,
+          difficulty: goal.difficulty,
+          createdAt: today.toISOString()
+        });
+      });
+    });
+  });
+
+  saveData();
+  renderToday();
+  renderWeek();
+  renderStats();
+  showToast('AI 已根据遗忘曲线生成学习+复习计划');
+}
+
+function regenerateToday() {
+  if (appData.goals.length === 0) {
+    showToast('请先添加学习目标');
+    return;
+  }
+  
+  // Ensure today has reasonable tasks by distributing unfinished tasks
+  const today = formatDate(new Date());
+  const todayTasks = appData.tasks.filter(t => t.date === today);
+  
+  if (todayTasks.length < 3) {
+    // Pull some future tasks to today if underloaded
+    const futureLearn = appData.tasks.filter(t => t.type === 'learn' && t.date > today && !t.completed);
+    const needed = 3 - todayTasks.length;
+    futureLearn.slice(0, needed).forEach(t => { t.date = today; });
+  }
+  
+  saveData();
+  renderToday();
+  renderWeek();
+  renderStats();
+  showToast('今日任务已刷新');
+}
+
+// ==================== Today Tasks ====================
+function renderToday() {
+  const today = formatDate(new Date());
+  const todayTasks = appData.tasks.filter(t => t.date === today);
+  
+  const learnTasks = todayTasks.filter(t => t.type === 'learn');
+  const reviewTasks = todayTasks.filter(t => t.type === 'review');
+
+  // Update header stats
+  const totalDuration = todayTasks.reduce((sum, t) => sum + t.duration, 0);
+  document.getElementById('todayTaskCount').textContent = todayTasks.length;
+  document.getElementById('todayDuration').textContent = Math.round(totalDuration / 60 * 10) / 10 + 'h';
+  document.getElementById('reviewCount').textContent = reviewTasks.length;
+
+  const container = document.getElementById('todayTaskList');
+  if (todayTasks.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">☕</div>
+        <p>今日暂无任务，休息一下吧，或点击刷新生成</p>
+      </div>
+    `;
+    updateProgress();
+    return;
+  }
+
+  // Sort: review first, then by duration desc
+  todayTasks.sort((a, b) => {
+    if (a.type === 'review' && b.type !== 'review') return -1;
+    if (a.type !== 'review' && b.type === 'review') return 1;
+    return b.duration - a.duration;
+  });
+
+  container.innerHTML = todayTasks.map(task => renderTaskItem(task)).join('');
+  updateProgress();
+}
+
+function renderTaskItem(task) {
+  const goal = appData.goals.find(g => g.id === task.goalId);
+  const colorClass = goal ? SUBJECT_COLORS[goal.colorIndex] : 'subject-color-1';
+  const tagClass = task.type === 'review' ? 'tag-review' : 'tag-new';
+  const tagText = task.type === 'review' ? `复习 #${task.reviewIndex}` : '新学';
+  const urgent = task.type === 'learn' && daysBetween(new Date(), new Date(goal.examDate)) <= 3;
+  
+  return `
+    <div class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+      <div class="task-checkbox" onclick="toggleTask('${task.id}')">
+        ${task.completed ? '✓' : ''}
+      </div>
+      <div class="task-content">
+        <div class="task-title">${task.point}</div>
+        <div class="task-meta">
+          <span class="task-tag ${colorClass}">${task.subject}</span>
+          <span class="task-tag ${tagClass}">${tagText}</span>
+          ${urgent ? '<span class="task-tag tag-urgent">临近考试</span>' : ''}
+          <span>⏱️ ${task.duration}分钟</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleTask(id) {
+  const task = appData.tasks.find(t => t.id === id);
+  if (!task) return;
+  
+  task.completed = !task.completed;
+  if (task.completed) {
+    appData.completions[id] = new Date().toISOString();
+  } else {
+    delete appData.completions[id];
+  }
+  
+  saveData();
+  renderToday();
+  renderWeek();
+  renderStats();
+  
+  if (task.completed) {
+    showToast('完成任务！继续保持 💪');
+  }
+}
+
+function updateProgress() {
+  const today = formatDate(new Date());
+  const todayTasks = appData.tasks.filter(t => t.date === today);
+  const completed = todayTasks.filter(t => t.completed).length;
+  const total = todayTasks.length;
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  
+  document.getElementById('todayProgress').textContent = percent + '%';
+  document.getElementById('progressPercent').textContent = percent + '%';
+  
+  const ring = document.getElementById('progressRing');
+  const circumference = 2 * Math.PI * 52;
+  const offset = circumference - (percent / 100) * circumference;
+  ring.style.strokeDashoffset = offset;
+  
+  document.getElementById('totalCompleted').textContent = Object.keys(appData.completions).length;
+}
+
+// ==================== Review Tasks ====================
+function renderReviews() {
+  const today = formatDate(new Date());
+  const reviews = appData.tasks.filter(t => t.type === 'review' && t.date === today && !t.completed);
+  
+  const container = document.getElementById('reviewList');
+  if (reviews.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🎉</div>
+        <p>今日没有复习任务，继续保持！</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = reviews.map(task => renderTaskItem(task)).join('');
+}
+
+// ==================== Weekly Calendar ====================
+function renderWeek() {
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+  
+  const days = ['一', '二', '三', '四', '五', '六', '日'];
+  const container = document.getElementById('weekGrid');
+  
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(startOfWeek, i);
+    const dateStr = formatDate(date);
+    const isToday = dateStr === formatDate(today);
+    const dayTasks = appData.tasks.filter(t => t.date === dateStr);
+    const completedCount = dayTasks.filter(t => t.completed).length;
+    const totalCount = dayTasks.length;
+    
+    html += `
+      <div class="week-day ${isToday ? 'active' : ''}" onclick="showDayDetail('${dateStr}')">
+        <div class="day-name">周${days[i]}</div>
+        <div class="day-date">${date.getDate()}</div>
+        <div class="day-count">${totalCount > 0 ? completedCount + '/' + totalCount : '无任务'}</div>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+}
+
+function showDayDetail(dateStr) {
+  const dayTasks = appData.tasks.filter(t => t.date === dateStr);
+  if (dayTasks.length === 0) {
+    showToast(`${dateStr} 没有安排任务`);
+    return;
+  }
+  
+  const date = new Date(dateStr);
+  const dayText = `${date.getMonth() + 1}月${date.getDate()}日`;
+  const tasksHtml = dayTasks.map(t => renderTaskItem(t)).join('');
+  
+  const modal = document.getElementById('addGoalModal');
+  modal.querySelector('.modal-title').textContent = `${dayText} 任务详情`;
+  modal.querySelector('.modal').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">${dayText} 任务详情</div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="task-list">${tasksHtml}</div>
+  `;
+  modal.classList.add('active');
+}
+
+// ==================== Statistics ====================
+function renderStats() {
+  // Week duration
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+  const endOfWeek = addDays(startOfWeek, 6);
+  
+  const weekTasks = appData.tasks.filter(t => {
+    const d = new Date(t.date);
+    return d >= startOfWeek && d <= endOfWeek && t.completed;
+  });
+  const weekMinutes = weekTasks.reduce((sum, t) => sum + t.duration, 0);
+  document.getElementById('weekDuration').textContent = Math.round(weekMinutes / 60 * 10) / 10 + 'h';
+  document.getElementById('activeGoals').textContent = appData.goals.length;
+  
+  updateProgress();
+  renderSubjectProgress();
+  renderReviews();
+}
+
+function renderSubjectProgress() {
+  const container = document.getElementById('subjectProgress');
+  if (appData.goals.length === 0) {
+    container.innerHTML = '<p class="text-sm text-muted">添加目标后查看进度</p>';
+    return;
+  }
+  
+  container.innerHTML = appData.goals.map(goal => {
+    const goalTasks = appData.tasks.filter(t => t.goalId === goal.id);
+    const completed = goalTasks.filter(t => t.completed).length;
+    const total = goalTasks.length || 1;
+    const percent = Math.round((completed / total) * 100);
+    const colorClass = SUBJECT_COLORS[goal.colorIndex];
+    
+    return `
+      <div class="mb-2">
+        <div class="flex" style="justify-content:space-between; margin-bottom:6px;">
+          <span class="text-sm" style="font-weight:500;">${goal.subject}</span>
+          <span class="text-sm text-muted">${percent}%</span>
+        </div>
+        <div style="background:var(--border); border-radius:50px; height:8px; overflow:hidden;">
+          <div class="${colorClass}" style="height:100%; width:${percent}%; border-radius:50px; transition:width 0.5s ease;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ==================== Modal ====================
+function openModal() {
+  document.getElementById('addGoalModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('addGoalModal').classList.remove('active');
+  // Restore modal content for next add use
+  setTimeout(() => {
+    const modal = document.getElementById('addGoalModal');
+    modal.querySelector('.modal').innerHTML = `
+      <div class="modal-header">
+        <div class="modal-title">添加学习目标</div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>科目</label>
+        <input type="text" id="modalSubject" placeholder="例如：英语四级">
+      </div>
+      <div class="form-group">
+        <label>考试日期</label>
+        <input type="date" id="modalDate">
+      </div>
+      <div class="form-group">
+        <label>知识点</label>
+        <textarea id="modalPoints" placeholder="每行输入一个知识点"></textarea>
+      </div>
+      <div class="form-group">
+        <label>难度</label>
+        <select id="modalDifficulty">
+          <option value="1">⭐ 简单</option>
+          <option value="2" selected>⭐⭐ 中等</option>
+          <option value="3">⭐⭐⭐ 较难</option>
+          <option value="4">⭐⭐⭐⭐ 困难</option>
+          <option value="5">⭐⭐⭐⭐⭐ 极难</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addGoalFromModal()">确认添加</button>
+    `;
+  }, 300);
+}
+
+// ==================== Initialization ====================
+function init() {
+  // Set default dates
+  const today = new Date();
+  const defaultDate = formatDate(addDays(today, 14));
+  document.getElementById('goalDate').value = defaultDate;
+  document.getElementById('modalDate').value = defaultDate;
+  
+  loadData();
+  renderGoals();
+  renderToday();
+  renderWeek();
+  renderStats();
+  renderReviews();
+}
+
+// Close modal on overlay click
+document.getElementById('addGoalModal').addEventListener('click', (e) => {
+  if (e.target.id === 'addGoalModal') closeModal();
+});
+
+init();
+</script>
+</body>
+</html>
